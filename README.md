@@ -1,51 +1,54 @@
 # Terraform Infrastructure CI Lab
 
-![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-≥1.0-7B42BC?logo=terraform&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?logo=github-actions&logoColor=white)
 ![Checkov](https://img.shields.io/badge/Checkov-Security_Scan-4CAF50?logo=checkmarx&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS-Provider-FF9900?logo=amazon-aws&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-A modular Terraform project with a fully automated CI/CD validation pipeline using GitHub Actions and Checkov security scanning — **no live cloud deployment required**.
+A modular Terraform project demonstrating a production-style IaC workflow with automated validation, static security analysis, and change previewing via GitHub Actions — **no live cloud deployment**.
 
 ---
 
 ## Table of Contents
 
-- [Overview](#-overview)
-- [Project Structure](#-project-structure)
-- [Key Features](#-key-features)
-- [CI/CD Pipeline](#-cicd-pipeline)
-- [Security Scanning](#-security-scanning)
-- [Design Decisions](#-design-decisions)
-- [Technologies Used](#-technologies-used)
-- [Getting Started](#-getting-started)
+- [Overview](#overview)
+- [Project Structure](#project-structure)
+- [Modules](#modules)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Security Model](#security-model)
+- [Artifacts](#artifacts)
+- [Design Decisions](#design-decisions)
+- [Technologies](#technologies)
+- [Getting Started](#getting-started)
 
 ---
 
 ## Overview
 
-This project demonstrates a production-style Infrastructure as Code (IaC) workflow, simulating a real-world infrastructure engineering pipeline without deploying to a live cloud environment.
+This lab simulates a real-world infrastructure engineering pipeline focused on correctness, security posture, and change visibility — without provisioning any cloud resources.
 
-The focus is on:
+**Core objectives:**
 
-- **Terraform modular design** — reusable, maintainable infrastructure components
-- **CI/CD validation** — automated checks on every push and pull request
-- **Security scanning** — static analysis with Checkov to catch misconfigurations early
-- **Change previewing** — safe Terraform plan output with no apply step
+| Objective | Implementation |
+|---|---|
+| Modular infrastructure design | Reusable Terraform modules per service domain |
+| Automated validation | `terraform fmt`, `validate`, and `plan` in CI |
+| Shift-left security | Checkov static analysis as a blocking pipeline stage |
+| Safe change previewing | Terraform plan with no apply step |
 
 ---
 
-##  Project Structure
+## Project Structure
 
 ```
 .
 ├── modules/
-│   ├── vpc/           # VPC networking
-│   ├── ec2/           # Compute resources
-│   ├── iam/           # Roles and policies
-│   ├── s3_logs/       # S3 logging configuration
-│   └── logging/       # Logging infrastructure
+│   ├── vpc/                  # Network topology and subnets
+│   ├── ec2/                  # Compute instance configuration
+│   ├── iam/                  # Roles, policies, and permissions
+│   ├── s3_logs/              # S3 bucket for log storage
+│   └── logging/              # Centralized logging infrastructure
 ├── main.tf
 ├── variables.tf
 ├── outputs.tf
@@ -57,139 +60,114 @@ The focus is on:
 
 ---
 
-##  Key Features
+## Modules
 
-###  Modular Terraform Architecture
+Each module encapsulates a single infrastructure concern, promoting separation of responsibility and independent testability.
 
-Infrastructure is split into focused, reusable modules:
-
-| Module | Purpose |
+| Module | Responsibility |
 |---|---|
-| `vpc` | Network topology and subnets |
-| `ec2` | Compute instance configuration |
-| `iam` | Roles, policies, and permissions |
-| `s3_logs` | S3 bucket for log storage |
-| `logging` | Centralized logging infrastructure |
-
-This separation improves **maintainability**, **testability**, and **scalability**.
-
----
-
-###  CI/CD Pipeline (GitHub Actions)
-
-Every `push` and `pull_request` triggers an automated pipeline with the following stages:
-
-```
-Terraform Init
-      ↓
-Format Check (terraform fmt)
-      ↓
-Validate (terraform validate)
-      ↓
-Checkov Security Scan
-      ↓
-Terraform Plan (dry-run)
-```
-
----
-
-###  Security Scanning (Checkov)
-
-Static infrastructure analysis is performed by [Checkov](https://www.checkov.io/) to detect common misconfigurations before they reach production:
-
-- Misconfigured IAM policies
-- Public access risks on S3 or EC2
-- Missing encryption at rest or in transit
-- Overly permissive security group rules
-
----
-
-### Terraform Plan (No Deployment)
-
-The pipeline generates a full execution plan showing:
-
-- Resources to be **created**
-- Resources to be **modified**
-- Resources to be **destroyed**
-
->  **No infrastructure is deployed.** This project is intentionally designed as a safe validation lab.
+| `vpc` | VPC, subnets, route tables, internet gateway |
+| `ec2` | Instance type, AMI, security groups, key pairs |
+| `iam` | Least-privilege roles, instance profiles, policy attachments |
+| `s3_logs` | Log bucket with access controls and lifecycle rules |
+| `logging` | Centralized log aggregation and retention configuration |
 
 ---
 
 ## CI/CD Pipeline
 
-Defined in `.github/workflows/terraform-ci.yml`:
+Defined in `.github/workflows/terraform-ci.yml` and triggered on every `push` and `pull_request`.
 
-```yaml
-on:
-  push:
-  pull_request:
-
-jobs:
-  terraform:
-    steps:
-      - Checkout repository
-      - Terraform Init
-      - Terraform Format Check
-      - Terraform Validate
-      - Checkov Security Scan
-      - Terraform Plan
 ```
+┌─────────────────────┐
+│   Terraform Init    │  Initialises providers and modules
+└────────┬────────────┘
+         ↓
+┌─────────────────────┐
+│   Format Check      │  terraform fmt -check (fails on drift)
+└────────┬────────────┘
+         ↓
+┌─────────────────────┐
+│   Validate          │  Syntax and internal consistency check
+└────────┬────────────┘
+         ↓
+┌─────────────────────┐
+│   Checkov Scan      │  Static IaC security analysis (blocking)
+└────────┬────────────┘
+         ↓
+┌─────────────────────┐
+│   Terraform Plan    │  Dry-run — no resources are created
+└─────────────────────┘
+```
+
+> Each stage is a hard gate. A failure at any step blocks the subsequent stages and prevents merge.
 
 ---
 
-## Security Scanning
+## Security Model
 
-Checkov is configured to scan all Terraform files and flag issues across common AWS services. Results are surfaced directly in the GitHub Actions workflow logs and can be integrated with PR checks to block merges on critical findings.
+### Threat Model Scope
+
+This project addresses **IaC misconfiguration risk** — the leading cause of cloud security incidents. The attack surface is limited to Terraform configuration changes; runtime threats are out of scope as no environment is deployed.
+
+### Risk Areas and Controls
+
+| Risk | Threat | Control |
+|---|---|---|
+| Over-permissive IAM | Privilege escalation, lateral movement | Checkov policy rules + least-privilege module design |
+| Public resource exposure | Unintended data exposure | Checkov public access checks |
+| Missing encryption | Data at rest/in transit unprotected | Checkov encryption rules |
+| Permissive security groups | Unrestricted inbound/outbound traffic | Checkov network rules |
+| Configuration drift | Inconsistent or broken state | `terraform fmt` + `terraform validate` |
+| Unapproved changes | Infrastructure changes without review | Terraform plan surfaced as a PR artifact |
+
+### Shift-Left Enforcement
+
+Security scanning runs **before** the plan stage, ensuring misconfigured code never produces an actionable execution plan:
+
+```
+Validate → [Checkov PASS] → Plan    ✅
+Validate → [Checkov FAIL] → ✗ Blocked, pipeline fails
+```
+
+When Checkov detects a violation, the GitHub Actions workflow fails immediately, the finding is logged in the job output, and the PR cannot be merged until resolved.
+
+---
+
+## Artifacts
+
+The pipeline saves the following downloadable artifacts on each run:
+
+| Artifact | Contents | Purpose |
+|---|---|---|
+| `plan.txt` | Full Terraform plan output | Review proposed infrastructure changes |
+| Checkov report | Static analysis findings | Audit trail of security scan results |
+
+Artifacts persist after CI execution, enabling asynchronous review and compliance record-keeping.
 
 ---
 
 ## Design Decisions
 
-**Why no `terraform apply`?**
-This project is a **CI demonstration lab** — the goal is to validate infrastructure correctness and security posture, not to provision real resources.
+**No `terraform apply`**
+This is an intentional constraint. The project validates infrastructure design and security posture at the code level. Deployment is outside the scope of this lab.
 
-**Why no remote state (S3 backend)?**
-Local state keeps the project self-contained with zero external dependencies, making it easy to clone and run immediately.
+**No remote state (S3 backend)**
+Local state keeps the project self-contained with no external dependencies, allowing it to be cloned and run in isolation without AWS credentials or pre-existing infrastructure.
 
+**Checkov as a blocking stage**
+Security scanning is positioned before `terraform plan` to ensure no execution plan is generated from insecure configurations. This reflects a security-first pipeline philosophy.
 
-## Security Model (Threat Analysis)
-
-This project focuses on infrastructure security at the code level (IaC), without deploying to a live cloud environment.
-
-### Threat Model Assumptions
-- Misconfigurations in infrastructure code are the primary risk
-- No runtime environment is deployed, so runtime attacks are out of scope
-- The main attack surface is Terraform configuration changes
-
-### Security Risks Considered
-- Insecure IAM policies (over-permissive access)
-- Public exposure of infrastructure resources
-- Missing encryption or data protection controls
-- Misconfigured networking rules
-
-### Security Controls Implemented
-
-| Risk Area              | Control Used        | Purpose |
-|----------------------|---------------------|----------|
-| Infrastructure flaws | Terraform Validate  | Ensures configuration correctness |
-| Code formatting drift | Terraform fmt check | Prevents inconsistent code states |
-| Security misconfigurations | Checkov | Static IaC security analysis |
-| Infrastructure changes | Terraform Plan | Previews all changes before execution |
-
-### Security Approach
-
-This project follows a "shift-left security" approach where security checks are executed early in the CI pipeline before any potential deployment stage.
 ---
 
-## Technologies Used
+## Technologies
 
-| Tool | Purpose |
-|---|---|
-| [Terraform](https://www.terraform.io/) | Infrastructure as Code |
-| [AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest) | Cloud resource definitions |
-| [GitHub Actions](https://github.com/features/actions) | CI/CD automation |
-| [Checkov](https://www.checkov.io/) | Static security analysis |
+| Tool | Version | Purpose |
+|---|---|---|
+| [Terraform](https://www.terraform.io/) | ≥ 1.0 | Infrastructure as Code |
+| [AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest) | Latest | AWS resource definitions |
+| [GitHub Actions](https://github.com/features/actions) | — | CI/CD orchestration |
+| [Checkov](https://www.checkov.io/) | Latest | Static IaC security analysis |
 
 ---
 
@@ -198,15 +176,15 @@ This project follows a "shift-left security" approach where security checks are 
 ### Prerequisites
 
 - [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.0
-- [Checkov](https://www.checkov.io/2.Basics/Installing%20Checkov.html) (optional, for local scans)
+- [Checkov](https://www.checkov.io/2.Basics/Installing%20Checkov.html) *(optional — for local security scans)*
 
-### Run Locally
+### Run the Pipeline Locally
 
 ```bash
-# Initialize working directory
+# Initialise providers and modules
 terraform init
 
-# Check formatting
+# Verify formatting
 terraform fmt -check
 
 # Validate configuration
@@ -219,66 +197,15 @@ terraform plan
 ### Run Security Scan Locally
 
 ```bash
+# Scan all Terraform files in the current directory
 checkov -d .
+
+# Output results in JUnit format (for CI integration)
+checkov -d . -o junitxml > checkov-report.xml
 ```
----------------------------------
-## CI Pipeline Outputs
 
-This project generates the following outputs in GitHub Actions:
-
-### 1. Terraform Validation
-Ensures Terraform configuration is syntactically correct and internally consistent.
-
-### 2. Security Scan (Checkov)
-Performs static analysis of infrastructure code to detect security misconfigurations.
-
-### 3. Terraform Plan (Dry Run)
-Generates a preview of infrastructure changes without applying them.
-
-Plan output is saved as an artifact in GitHub Actions for review.
-----------------------------------
-## CI Artifacts
-
-The pipeline generates downloadable artifacts:
-
-- Terraform plan output (`plan.txt`)
-- Security scan logs (Checkov output)
-
-These artifacts allow infrastructure changes to be reviewed even after CI execution.
-
----------------------------------------
-## What This Project Demonstrates
-
-- Infrastructure as Code (Terraform)
-- Modular infrastructure design
-- CI/CD pipeline design using GitHub Actions
-- Static security analysis (Checkov)
-- Infrastructure change previewing without deployment
 ---
-## CI Security Enforcement Behavior
 
-Security checks are enforced automatically in the CI pipeline. If a security issue is detected, the pipeline fails and blocks progression.
-
-### Example Security Failure Behavior
-
-When Checkov detects a misconfiguration:
-- The CI pipeline fails
-- The issue is displayed in the GitHub Actions logs
-- The change cannot be merged until resolved
-
-### Security as a Gate (Shift-Left Enforcement)
-
-Security is treated as a blocking stage in the pipeline:
-
-1. Code is validated (Terraform validate)
-2. Security scan is executed (Checkov)
-3. If any violations exist, the pipeline fails
-4. Only clean configurations pass to the "plan" stage
-
-### Outcome
-
-This ensures that insecure infrastructure configurations cannot progress through the delivery pipeline.
-
-## 📄 License
+## License
 
 This project is open source and available under the [MIT License](LICENSE).
