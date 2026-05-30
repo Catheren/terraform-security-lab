@@ -178,6 +178,7 @@ This project focuses on infrastructure security at the code level (IaC), without
 | Infrastructure changes | Terraform Plan | Previews all changes before execution |
 
 ### Security Approach
+
 This project follows a "shift-left security" approach where security checks are executed early in the CI pipeline before any potential deployment stage.
 ---
 
