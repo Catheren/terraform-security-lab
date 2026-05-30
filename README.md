@@ -152,6 +152,33 @@ This project is a **CI demonstration lab** — the goal is to validate infrastru
 **Why no remote state (S3 backend)?**
 Local state keeps the project self-contained with zero external dependencies, making it easy to clone and run immediately.
 
+
+## Security Model (Threat Analysis)
+
+This project focuses on infrastructure security at the code level (IaC), without deploying to a live cloud environment.
+
+### Threat Model Assumptions
+- Misconfigurations in infrastructure code are the primary risk
+- No runtime environment is deployed, so runtime attacks are out of scope
+- The main attack surface is Terraform configuration changes
+
+### Security Risks Considered
+- Insecure IAM policies (over-permissive access)
+- Public exposure of infrastructure resources
+- Missing encryption or data protection controls
+- Misconfigured networking rules
+
+### Security Controls Implemented
+
+| Risk Area              | Control Used        | Purpose |
+|----------------------|---------------------|----------|
+| Infrastructure flaws | Terraform Validate  | Ensures configuration correctness |
+| Code formatting drift | Terraform fmt check | Prevents inconsistent code states |
+| Security misconfigurations | Checkov | Static IaC security analysis |
+| Infrastructure changes | Terraform Plan | Previews all changes before execution |
+
+### Security Approach
+This project follows a "shift-left security" approach where security checks are executed early in the CI pipeline before any potential deployment stage.
 ---
 
 ## Technologies Used
