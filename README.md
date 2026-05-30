@@ -1,4 +1,4 @@
-# 🏗️ Terraform Infrastructure CI Lab
+# Terraform Infrastructure CI Lab
 
 ![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?logo=github-actions&logoColor=white)
@@ -10,7 +10,7 @@ A modular Terraform project with a fully automated CI/CD validation pipeline usi
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#-overview)
 - [Project Structure](#-project-structure)
@@ -23,20 +23,20 @@ A modular Terraform project with a fully automated CI/CD validation pipeline usi
 
 ---
 
-## 🔍 Overview
+## Overview
 
 This project demonstrates a production-style Infrastructure as Code (IaC) workflow, simulating a real-world infrastructure engineering pipeline without deploying to a live cloud environment.
 
 The focus is on:
 
-- ✅ **Terraform modular design** — reusable, maintainable infrastructure components
-- ✅ **CI/CD validation** — automated checks on every push and pull request
-- ✅ **Security scanning** — static analysis with Checkov to catch misconfigurations early
-- ✅ **Change previewing** — safe Terraform plan output with no apply step
+- **Terraform modular design** — reusable, maintainable infrastructure components
+- **CI/CD validation** — automated checks on every push and pull request
+- **Security scanning** — static analysis with Checkov to catch misconfigurations early
+- **Change previewing** — safe Terraform plan output with no apply step
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 .
@@ -57,9 +57,9 @@ The focus is on:
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
-### 🧩 Modular Terraform Architecture
+###  Modular Terraform Architecture
 
 Infrastructure is split into focused, reusable modules:
 
@@ -75,7 +75,7 @@ This separation improves **maintainability**, **testability**, and **scalability
 
 ---
 
-### ⚙️ CI/CD Pipeline (GitHub Actions)
+###  CI/CD Pipeline (GitHub Actions)
 
 Every `push` and `pull_request` triggers an automated pipeline with the following stages:
 
@@ -93,7 +93,7 @@ Terraform Plan (dry-run)
 
 ---
 
-### 🔒 Security Scanning (Checkov)
+###  Security Scanning (Checkov)
 
 Static infrastructure analysis is performed by [Checkov](https://www.checkov.io/) to detect common misconfigurations before they reach production:
 
@@ -104,7 +104,7 @@ Static infrastructure analysis is performed by [Checkov](https://www.checkov.io/
 
 ---
 
-### 🔎 Terraform Plan (No Deployment)
+### Terraform Plan (No Deployment)
 
 The pipeline generates a full execution plan showing:
 
@@ -112,11 +112,11 @@ The pipeline generates a full execution plan showing:
 - Resources to be **modified**
 - Resources to be **destroyed**
 
-> ⚠️ **No infrastructure is deployed.** This project is intentionally designed as a safe validation lab.
+>  **No infrastructure is deployed.** This project is intentionally designed as a safe validation lab.
 
 ---
 
-## 🚀 CI/CD Pipeline
+## CI/CD Pipeline
 
 Defined in `.github/workflows/terraform-ci.yml`:
 
@@ -138,13 +138,13 @@ jobs:
 
 ---
 
-## 🛡️ Security Scanning
+## Security Scanning
 
 Checkov is configured to scan all Terraform files and flag issues across common AWS services. Results are surfaced directly in the GitHub Actions workflow logs and can be integrated with PR checks to block merges on critical findings.
 
 ---
 
-## 💡 Design Decisions
+## Design Decisions
 
 **Why no `terraform apply`?**
 This project is a **CI demonstration lab** — the goal is to validate infrastructure correctness and security posture, not to provision real resources.
@@ -154,7 +154,7 @@ Local state keeps the project self-contained with zero external dependencies, ma
 
 ---
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 | Tool | Purpose |
 |---|---|
@@ -165,7 +165,7 @@ Local state keeps the project self-contained with zero external dependencies, ma
 
 ---
 
-## 🏁 Getting Started
+## Getting Started
 
 ### Prerequisites
 
