@@ -193,7 +193,39 @@ terraform plan
 ```bash
 checkov -d .
 ```
+---------------------------------
+## CI Pipeline Outputs
 
+This project generates the following outputs in GitHub Actions:
+
+### 1. Terraform Validation
+Ensures Terraform configuration is syntactically correct and internally consistent.
+
+### 2. Security Scan (Checkov)
+Performs static analysis of infrastructure code to detect security misconfigurations.
+
+### 3. Terraform Plan (Dry Run)
+Generates a preview of infrastructure changes without applying them.
+
+Plan output is saved as an artifact in GitHub Actions for review.
+----------------------------------
+## CI Artifacts
+
+The pipeline generates downloadable artifacts:
+
+- Terraform plan output (`plan.txt`)
+- Security scan logs (Checkov output)
+
+These artifacts allow infrastructure changes to be reviewed even after CI execution.
+
+---------------------------------------
+## What This Project Demonstrates
+
+- Infrastructure as Code (Terraform)
+- Modular infrastructure design
+- CI/CD pipeline design using GitHub Actions
+- Static security analysis (Checkov)
+- Infrastructure change previewing without deployment
 ---
 
 ## 📄 License
