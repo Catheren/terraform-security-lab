@@ -255,6 +255,29 @@ These artifacts allow infrastructure changes to be reviewed even after CI execut
 - Static security analysis (Checkov)
 - Infrastructure change previewing without deployment
 ---
+## CI Security Enforcement Behavior
+
+Security checks are enforced automatically in the CI pipeline. If a security issue is detected, the pipeline fails and blocks progression.
+
+### Example Security Failure Behavior
+
+When Checkov detects a misconfiguration:
+- The CI pipeline fails
+- The issue is displayed in the GitHub Actions logs
+- The change cannot be merged until resolved
+
+### Security as a Gate (Shift-Left Enforcement)
+
+Security is treated as a blocking stage in the pipeline:
+
+1. Code is validated (Terraform validate)
+2. Security scan is executed (Checkov)
+3. If any violations exist, the pipeline fails
+4. Only clean configurations pass to the "plan" stage
+
+### Outcome
+
+This ensures that insecure infrastructure configurations cannot progress through the delivery pipeline.
 
 ## 📄 License
 
