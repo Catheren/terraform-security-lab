@@ -91,6 +91,7 @@ jobs:
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
           soft_fail: false
+
   # -----------------------------------------------------------
   # Job 3 — Checkov
   # -----------------------------------------------------------
@@ -121,3 +122,36 @@ jobs:
           framework: terraform
           soft_fail: false
           output_format: cli
+  # -----------------------------------------------------------
+  # Job 4 — Gitleaks Secret Scanning
+  # -----------------------------------------------------------
+  # Scans the entire git history for committed credentials —
+  # API keys, tokens, passwords, private keys, connection strings.
+  #
+  # Secrets in git history are permanently compromised even after
+  # deletion. Rotation is the only remediation once a secret is
+  # detected. This job prevents them reaching main in the first place.
+  #
+  # Runs in parallel with tfsec and checkov after Job 1 passes.
+  # -----------------------------------------------------------
+  gitleaks:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    needs: terraform-checks  # only runs if Job 1 passes
+
+    steps:
+      # fetch-depth: 0 downloads the full git history.
+      # Default is fetch-depth: 1 (latest commit only).
+      # Gitleaks must scan all commits — a secret pushed and
+      # "deleted" in a later commit is still in the history.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # GITHUB_TOKEN is automatically provided by GitHub Actions.
+      # Gitleaks uses it to post findings as PR annotations.
+      # No secrets need to be manually configured for this to work.
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
