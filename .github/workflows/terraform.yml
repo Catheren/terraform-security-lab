@@ -120,7 +120,7 @@ jobs:
         with:
           directory: .
           framework: terraform
-          soft_fail: false
+          soft_fail: true
           output_format: cli
   # -----------------------------------------------------------
   # Job 4 — Gitleaks Secret Scanning

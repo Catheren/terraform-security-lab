@@ -154,3 +154,48 @@ for disaster recovery scenarios.
 **S3 logging** — ensures audit trail exists for all bucket access.
 Required for incident response — without access logs, answering
 "who accessed this data?" is impossible.
+
+---
+
+## Accepted Risks — Round 2
+
+The following findings were identified in a subsequent pipeline run
+and accepted as risks for this non-production lab environment.
+
+### CKV_AWS_145 — S3 KMS encryption
+**Status:** Accepted risk  
+**Justification:** KMS keys incur $1/month per key. AES256 server-side
+encryption is already enforced on all S3 buckets. KMS CMK encryption
+will be enforced in production environments.
+
+### CKV2_AWS_62 — S3 event notifications
+**Status:** Accepted risk  
+**Justification:** Event notifications require additional infrastructure
+(Lambda, SQS, or SNS). Out of scope for this lab environment. In
+production, S3 event notifications feed security monitoring pipelines
+for real-time anomaly detection.
+
+### CKV2_AWS_10 — CloudTrail CloudWatch Logs integration
+**Status:** Accepted risk  
+**Justification:** CloudWatch Logs integration requires a log group
+and IAM role configuration. Out of scope for this lab. In production,
+CloudTrail CloudWatch integration enables real-time alerting on
+suspicious API activity.
+
+### CKV_AWS_18 — S3 access logging
+**Status:** Accepted risk  
+**Justification:** Lab environment. Enabling access logging requires
+a dedicated logging bucket creating circular dependencies in this
+module structure. Will be addressed in production with a centralized
+logging account pattern.
+
+### CKV2_AWS_61 — S3 lifecycle policy on main bucket
+**Status:** Accepted risk  
+**Justification:** Lab environment. No long-term data retention
+requirements. Lifecycle policies will be enforced in production
+per data retention compliance requirements.
+
+### CKV_AWS_300 — Lifecycle abort rule for failed uploads
+**Status:** Accepted risk  
+**Justification:** Lab environment. Incomplete multipart uploads
+are not a cost concern at lab scale. Will be en
