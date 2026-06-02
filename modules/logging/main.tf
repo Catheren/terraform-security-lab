@@ -58,11 +58,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "trail_bucket" {
 
     transition {
       days          = 90
-      storage_class = "STANDARD_IA"  # cheaper storage after 90 days
+      storage_class = "STANDARD_IA" # cheaper storage after 90 days
     }
 
     expiration {
-      days = 365  # delete after 1 year
+      days = 365 # delete after 1 year
     }
   }
 }

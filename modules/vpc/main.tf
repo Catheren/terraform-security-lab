@@ -6,8 +6,8 @@ resource "aws_vpc" "this" {
   }
 }
 resource "aws_subnet" "this" {
-  vpc_id                  = aws_vpc.this.id
-  cidr_block              = var.subnet_cidr
+  vpc_id     = aws_vpc.this.id
+  cidr_block = var.subnet_cidr
   # Instances do not get public IPs by default.
   # Assign explicitly only where internet access is required.
   map_public_ip_on_launch = false
