@@ -91,3 +91,33 @@ jobs:
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
           soft_fail: false
+  # -----------------------------------------------------------
+  # Job 3 — Checkov
+  # -----------------------------------------------------------
+  # Policy-as-code scanner with a larger rule library than tfsec.
+  # Maps findings to compliance frameworks (CIS, SOC2, PCI-DSS)
+  # which is useful for audit and compliance reporting.
+  #
+  # Running both tfsec and Checkov is intentional — they use
+  # different rule sets and each catches issues the other misses.
+  # Defense in depth applies to tooling, not just infrastructure.
+  # -----------------------------------------------------------
+  checkov:
+    name: Checkov Policy Scan
+    runs-on: ubuntu-latest
+    needs: terraform-checks  # only runs if Job 1 passes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # soft_fail: false blocks the PR on any finding.
+      # No skip_check — all rules are enforced.
+      # output_format: cli gives human-readable output in the
+      # Actions log so you can see exactly what failed and why.
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: terraform
+          soft_fail: false
+          output_format: cli
