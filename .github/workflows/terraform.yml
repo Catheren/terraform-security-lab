@@ -63,3 +63,31 @@ jobs:
       # and undefined variable references across all modules.
       - name: Validate syntax
         run: terraform validate
+
+  # -----------------------------------------------------------
+  # Job 2 — tfsec
+  # -----------------------------------------------------------
+  # Static analysis tool purpose-built for Terraform. Checks
+  # HCL directly without requiring a plan or AWS credentials.
+  # Runs in parallel with checkov and gitleaks after Job 1 passes.
+  #
+  # `needs: terraform-checks` ensures we only scan syntactically
+  # valid code — malformed HCL produces noisy false positives.
+  # -----------------------------------------------------------
+  tfsec:
+    name: tfsec Security Scan
+    runs-on: ubuntu-latest
+    needs: terraform-checks  # only runs if Job 1 passes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Official tfsec GitHub Action.
+      # soft_fail: false means any finding exits non-zero,
+      # which fails the pipeline and blocks the PR.
+      # Set soft_fail: true temporarily if you're clearing a
+      # backlog of existing findings without blocking the team.
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          soft_fail: false
