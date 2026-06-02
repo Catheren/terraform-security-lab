@@ -25,10 +25,10 @@ resource "aws_s3_bucket" "insecure_bucket" {
 resource "aws_s3_bucket_public_access_block" "insecure_bucket" {
   bucket = aws_s3_bucket.insecure_bucket.id
 
-  block_public_acls       = false  # ← BAD: allows public ACLs
-  block_public_policy     = false  # ← BAD: allows public policies
-  ignore_public_acls      = false  # ← BAD: does not ignore public ACLs
-  restrict_public_buckets = false  # ← BAD: bucket is publicly accessible
+  block_public_acls       = false # ← BAD: allows public ACLs
+  block_public_policy     = false # ← BAD: allows public policies
+  ignore_public_acls      = false # ← BAD: does not ignore public ACLs
+  restrict_public_buckets = false # ← BAD: bucket is publicly accessible
 }
 
 # ── VULNERABILITY 2: Unrestricted SSH ─────────────────────
@@ -45,7 +45,7 @@ resource "aws_security_group" "insecure_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # ← BAD: SSH open to entire internet
+    cidr_blocks = ["0.0.0.0/0"] # ← BAD: SSH open to entire internet
     description = "SSH from anywhere"
   }
 
@@ -72,8 +72,8 @@ resource "aws_iam_policy" "insecure_policy" {
     Version = "2012-10-17"
     Statement = [{
       Effect   = "Allow"
-      Action   = ["*"]   # ← BAD: grants all AWS actions
-      Resource = "*"     # ← BAD: applies to all resources
+      Action   = ["*"] # ← BAD: grants all AWS actions
+      Resource = "*"   # ← BAD: applies to all resources
     }]
   })
 }
