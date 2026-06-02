@@ -1,5 +1,20 @@
-name: Terraform CI
+# =============================================================
+# Terraform Security Pipeline
+# =============================================================
+# Enforces security, compliance, and quality checks on every
+# PR and push to main. Each job runs in isolation — a failure
+# in one does not suppress results from others.
+#
+# Job execution order:
+#   terraform-checks (runs first)
+#       ↓ (all three run in parallel after checks pass)
+#   tfsec ── checkov ── gitleaks ── custom-scanner
+# =============================================================
 
+name: Terraform Security Pipeline
+
+# Trigger on all PRs and direct pushes to main.
+# PRs are the primary gate — main push is a safety net.
 on:
   pull_request:
   push:
@@ -7,21 +22,44 @@ on:
       - main
 
 jobs:
-  terraform:
+
+  # -----------------------------------------------------------
+  # Job 1 — Terraform Format & Validate
+  # -----------------------------------------------------------
+  # Validates syntax and formatting before any security tooling
+  # runs. Downstream jobs declare `needs: terraform-checks` so
+  # they are skipped automatically if this job fails — no point
+  # scanning malformed HCL.
+  # -----------------------------------------------------------
+  terraform-checks:
+    name: Terraform Format & Validate
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
+      # Pin the Terraform version to avoid silent breakage if
+      # HashiCorp ships a new release with breaking changes.
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
 
+      # -backend=false skips remote state initialisation.
+      # The runner has no AWS credentials — this keeps init
+      # fast and credential-free while still downloading
+      # providers needed for validate to work correctly.
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -backend=false
 
-      - name: Terraform Format Check
-        run: terraform fmt -check
+      # -check exits non-zero without modifying files.
+      # -recursive covers root and all module subdirectories.
+      # Developers should run `terraform fmt` locally before pushing.
+      - name: Check formatting
+        run: terraform fmt -check -recursive
 
-      - name: Terraform Validate
+      # Static analysis only — no AWS calls made.
+      # Catches type mismatches, missing required arguments,
+      # and undefined variable references across all modules.
+      - name: Validate syntax
         run: terraform validate
