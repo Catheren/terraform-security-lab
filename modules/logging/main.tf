@@ -31,7 +31,7 @@ resource "aws_s3_bucket_policy" "trail_policy" {
         Principal = {
           Service = "cloudtrail.amazonaws.com"
         }
-        Action = "s3:PutObject"
+        Action   = "s3:PutObject"
         Resource = "${aws_s3_bucket.trail_bucket.arn}/*"
 
         Condition = {
