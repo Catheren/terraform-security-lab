@@ -9,3 +9,8 @@ variable "vpc_cidr" {
 variable "subnet_cidr" {
   type = string
 }
+
+variable "environment" {
+  type    = string
+  default = "dev"
+}

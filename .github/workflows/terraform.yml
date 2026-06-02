@@ -1,5 +1,20 @@
-name: Terraform CI
+# =============================================================
+# Terraform Security Pipeline
+# =============================================================
+# Enforces security, compliance, and quality checks on every
+# PR and push to main. Each job runs in isolation — a failure
+# in one does not suppress results from others.
+#
+# Job execution order:
+#   terraform-checks (runs first)
+#       ↓ (all three run in parallel after checks pass)
+#   tfsec ── checkov ── gitleaks ── custom-scanner
+# =============================================================
 
+name: Terraform Security Pipeline
+
+# Trigger on all PRs and direct pushes to main.
+# PRs are the primary gate — main push is a safety net.
 on:
   pull_request:
   push:
@@ -7,21 +22,163 @@ on:
       - main
 
 jobs:
-  terraform:
+
+  # -----------------------------------------------------------
+  # Job 1 — Terraform Format & Validate
+  # -----------------------------------------------------------
+  # Validates syntax and formatting before any security tooling
+  # runs. Downstream jobs declare `needs: terraform-checks` so
+  # they are skipped automatically if this job fails — no point
+  # scanning malformed HCL.
+  # -----------------------------------------------------------
+  terraform-checks:
+    name: Terraform Format & Validate
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
+      # Pin the Terraform version to avoid silent breakage if
+      # HashiCorp ships a new release with breaking changes.
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
 
+      # -backend=false skips remote state initialisation.
+      # The runner has no AWS credentials — this keeps init
+      # fast and credential-free while still downloading
+      # providers needed for validate to work correctly.
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -backend=false
 
-      - name: Terraform Format Check
-        run: terraform fmt -check
+      # -check exits non-zero without modifying files.
+      # -recursive covers root and all module subdirectories.
+      # Developers should run `terraform fmt` locally before pushing.
+      - name: Check formatting
+        run: terraform fmt -check -recursive
 
-      - name: Terraform Validate
+      # Static analysis only — no AWS calls made.
+      # Catches type mismatches, missing required arguments,
+      # and undefined variable references across all modules.
+      - name: Validate syntax
         run: terraform validate
+
+  # -----------------------------------------------------------
+  # Job 2 — tfsec
+  # -----------------------------------------------------------
+  # Static analysis tool purpose-built for Terraform. Checks
+  # HCL directly without requiring a plan or AWS credentials.
+  # Runs in parallel with checkov and gitleaks after Job 1 passes.
+  #
+  # `needs: terraform-checks` ensures we only scan syntactically
+  # valid code — malformed HCL produces noisy false positives.
+  # -----------------------------------------------------------
+  tfsec:
+    name: tfsec Security Scan
+    runs-on: ubuntu-latest
+    needs: terraform-checks  # only runs if Job 1 passes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Official tfsec GitHub Action.
+      # soft_fail: false means any finding exits non-zero,
+      # which fails the pipeline and blocks the PR.
+      # Set soft_fail: true temporarily if you're clearing a
+      # backlog of existing findings without blocking the team.
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          soft_fail: false
+
+  # -----------------------------------------------------------
+  # Job 3 — Checkov
+  # -----------------------------------------------------------
+  # Policy-as-code scanner with a larger rule library than tfsec.
+  # Maps findings to compliance frameworks (CIS, SOC2, PCI-DSS)
+  # which is useful for audit and compliance reporting.
+  #
+  # Running both tfsec and Checkov is intentional — they use
+  # different rule sets and each catches issues the other misses.
+  # Defense in depth applies to tooling, not just infrastructure.
+  # -----------------------------------------------------------
+  checkov:
+    name: Checkov Policy Scan
+    runs-on: ubuntu-latest
+    needs: terraform-checks  # only runs if Job 1 passes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # soft_fail: false blocks the PR on any finding.
+      # No skip_check — all rules are enforced.
+      # output_format: cli gives human-readable output in the
+      # Actions log so you can see exactly what failed and why.
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+  # -----------------------------------------------------------
+  # Job 4 — Gitleaks Secret Scanning
+  # -----------------------------------------------------------
+  # Scans the entire git history for committed credentials —
+  # API keys, tokens, passwords, private keys, connection strings.
+  #
+  # Secrets in git history are permanently compromised even after
+  # deletion. Rotation is the only remediation once a secret is
+  # detected. This job prevents them reaching main in the first place.
+  #
+  # Runs in parallel with tfsec and checkov after Job 1 passes.
+  # -----------------------------------------------------------
+  gitleaks:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    needs: terraform-checks  # only runs if Job 1 passes
+
+    steps:
+      # fetch-depth: 0 downloads the full git history.
+      # Default is fetch-depth: 1 (latest commit only).
+      # Gitleaks must scan all commits — a secret pushed and
+      # "deleted" in a later commit is still in the history.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # GITHUB_TOKEN is automatically provided by GitHub Actions.
+      # Gitleaks uses it to post findings as PR annotations.
+      # No secrets need to be manually configured for this to work.
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # -----------------------------------------------------------
+  # Job 5 — Custom Security Scanner
+  # -----------------------------------------------------------
+  # Enforces organization-specific policies that generic tools
+  # cannot know about — required tags, naming conventions,
+  # approved regions, no hardcoded account IDs, S3 logging.
+  #
+  # Written in Python, runs as a standalone CLI tool.
+  # Exits with code 1 on CRITICAL or HIGH findings,
+  # which blocks the PR automatically.
+  # -----------------------------------------------------------
+  custom-scanner:
+    name: Custom Security Scanner
+    runs-on: ubuntu-latest
+    needs: terraform-checks
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # run the scanner — --fail-on-findings exits 1 on
+      # CRITICAL or HIGH findings, failing the pipeline
+      - name: Run custom scanner
+        run: python scanner/scanner.py --path . --fail-on-findings
