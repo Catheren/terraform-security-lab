@@ -155,3 +155,30 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # -----------------------------------------------------------
+  # Job 5 — Custom Security Scanner
+  # -----------------------------------------------------------
+  # Enforces organization-specific policies that generic tools
+  # cannot know about — required tags, naming conventions,
+  # approved regions, no hardcoded account IDs, S3 logging.
+  #
+  # Written in Python, runs as a standalone CLI tool.
+  # Exits with code 1 on CRITICAL or HIGH findings,
+  # which blocks the PR automatically.
+  # -----------------------------------------------------------
+  custom-scanner:
+    name: Custom Security Scanner
+    runs-on: ubuntu-latest
+    needs: terraform-checks
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # run the scanner — --fail-on-findings exits 1 on
+      # CRITICAL or HIGH findings, failing the pipeline
+      - name: Run custom scanner
+        run: python scanner/scanner.py --path . --fail-on-findings
