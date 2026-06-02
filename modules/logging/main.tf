@@ -1,5 +1,12 @@
 resource "aws_s3_bucket" "trail_bucket" {
   bucket = var.bucket_name
+
+  tags = {
+    Environment        = var.environment
+    Owner              = "security-team"
+    Project            = "security-lab"
+    DataClassification = "internal"
+  }
 }
 resource "aws_cloudtrail" "this" {
   name           = "security-trail"

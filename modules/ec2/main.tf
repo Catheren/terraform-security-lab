@@ -22,8 +22,11 @@ resource "aws_instance" "this" {
   }
 
   tags = {
-    Name        = var.instance_name
-    Environment = var.environment
+    Name               = var.instance_name
+    Environment        = var.environment
+    Owner              = "security-team"
+    Project            = "security-lab"
+    DataClassification = "internal"
   }
 
 }
