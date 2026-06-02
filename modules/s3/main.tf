@@ -1,10 +1,11 @@
 resource "aws_s3_bucket" "logs" {
   bucket = var.bucket_name
-  
+
   tags = {
-    Environment = var.environment
-    Project     = "security-lab"
-    ManagedBy   = "terraform"
+    Environment        = var.environment
+    Project            = "security-lab"
+    Owner              = "security-team"
+    DataClassification = "internal"
   }
 }
 

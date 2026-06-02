@@ -1,6 +1,13 @@
 resource "aws_iam_instance_profile" "this" {
   name = var.role_name
   role = aws_iam_role.ec2_role.name
+
+  tags = {
+    Environment        = var.environment
+    Owner              = "security-team"
+    Project            = "security-lab"
+    DataClassification = "internal"
+  }
 }
 
 
@@ -17,4 +24,10 @@ resource "aws_iam_role" "ec2_role" {
       Action = "sts:AssumeRole"
     }]
   })
+  tags = {
+    Environment        = var.environment
+    Owner              = "security-team"
+    Project            = "security-lab"
+    DataClassification = "internal"
+  }
 }
