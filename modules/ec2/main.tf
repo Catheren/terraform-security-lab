@@ -4,6 +4,8 @@ resource "aws_instance" "this" {
   subnet_id     = var.subnet_id
 
   iam_instance_profile = var.instance_profile_name
+  monitoring    = true  # 1-minute CloudWatch metrics vs default 5-minute
+  ebs_optimized = true  # dedicated bandwidth between instance and EBS
 
   # Enforce IMDSv2 — prevents SSRF attacks from stealing
   # IAM credentials via the metadata endpoint.
