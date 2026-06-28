@@ -131,6 +131,8 @@ To validate the pipeline catches real attacks (not just theoretical ones), a del
 
 The bad PR remains open on this repository as permanent evidence of the pipeline working as intended. See the [open pull request](../../pulls) to review the findings output.
 
+![Checkov blocking the bad PR](screenshot_bad_pr.png)
+
 ---
 
 ## AWS modules — security controls
